@@ -1,0 +1,23 @@
+name: Demo GitHub Action
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run a one-line script
+        run: echo "Hello, world! This is testing GitHub Actions."
+
+      - name: Run a multi-line script
+        run: |
+          echo "This action successfully ran."
+          echo "It triggers automatically on push and pull requests."
