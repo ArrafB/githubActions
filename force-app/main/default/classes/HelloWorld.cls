@@ -1,5 +1,5 @@
 public with sharing class HelloWorld {
     public static String getMessage() {
-        return 'Hello from GitHub Actions!';
+        return 'Hello Team! This is a PR from our feature branch!';
     }
 }
