@@ -1,8 +1,12 @@
 @isTest
 public class HelloWorldTest {
-    @isTest
-    static void testGetMessage() {
-        String message = HelloWorld.getMessage();
-        System.assertEquals('Hello Team! This is a PR from our feature branch!', message, 'Message should match');
-    }
+  @isTest
+  static void testGetMessage() {
+    String message = HelloWorld.getMessage();
+    System.assertEquals(
+      'Hello Team! This is the LIVE DEMO of our enterprise pipeline in action!',
+      message,
+      'Message should match'
+    );
+  }
 }
