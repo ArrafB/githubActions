@@ -2,7 +2,7 @@ name: Salesforce CI - Validate PR
 
 on:
   pull_request:
-    branches: [ "main", "master", "staging" ]
+    branches: ["main", "master", "staging"]
 
 jobs:
   validate:
@@ -17,7 +17,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: "20"
 
       - name: Install NPM Dependencies
         run: npm install
@@ -59,7 +59,7 @@ jobs:
             echo "No Salesforce metadata changed. Skipping deployment."
             exit 0
           fi
-          
+
           # We use RunSpecifiedTests with HelloWorldTest for this POC to avoid failing on pre-existing org errors.
           # In a pristine org, you would use --test-level RunLocalTests.
           # We also output code coverage results!
