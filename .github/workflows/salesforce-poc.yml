@@ -1,0 +1,32 @@
+name: Salesforce CI POC
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout the source code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Install the Salesforce CLI on the GitHub server
+      - name: Install Salesforce CLI
+        run: npm install -g @salesforce/cli
+
+      # 3. Log into the Dev Org using the Secret we saved
+      - name: Authenticate to Salesforce Org
+        # The action will fail here if the SFDX_AUTH_URL secret is not set in GitHub!
+        run: |
+          echo "${{ secrets.SFDX_AUTH_URL }}" > sfdx_auth.txt
+          sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --set-default --alias my-dev-org
+          rm sfdx_auth.txt
+
+      # 4. Prove it worked! Let's just list the org details.
+      - name: Verify Authentication
+        run: sf org display --target-org my-dev-org
