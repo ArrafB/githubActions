@@ -1,0 +1,27 @@
+name: Salesforce CI - Validate PR
+
+on:
+  pull_request:
+    branches: [ "main", "master", "staging" ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Salesforce CLI
+        run: npm install -g @salesforce/cli
+
+      - name: Authenticate to Salesforce Org
+        run: |
+          echo "${{ secrets.SFDX_AUTH_URL }}" > sfdx_auth.txt
+          sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --set-default --alias my-dev-org
+          rm sfdx_auth.txt
+
+      # The key difference: --dry-run
+      # This simulates a deployment and runs tests, but DOES NOT save the code in Salesforce
+      - name: Validate Deployment and Run Tests (Dry Run)
+        run: sf project deploy start --source-dir force-app --target-org my-dev-org --test-level RunSpecifiedTests --tests HelloWorldTest --dry-run

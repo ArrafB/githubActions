@@ -1,40 +1,31 @@
-name: Salesforce CI POC
+name: Salesforce CI - Deploy to Staging/Production
 
 on:
   push:
     branches: [ "main", "master" ]
-  pull_request:
-    branches: [ "main", "master" ]
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout the source code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Install the Salesforce CLI on the GitHub server
       - name: Install Salesforce CLI
         run: npm install -g @salesforce/cli
 
-      # 3. Log into the Dev Org using the Secret we saved
       - name: Authenticate to Salesforce Org
         run: |
           echo "${{ secrets.SFDX_AUTH_URL }}" > sfdx_auth.txt
           sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --set-default --alias my-dev-org
           rm sfdx_auth.txt
 
-      # 4. Prove it worked by listing org details
       - name: Verify Authentication
         run: sf org display --target-org my-dev-org
 
-      # 5. Deploy the Salesforce code to the Org
-      # The source-dir points to where our Apex classes live
       - name: Deploy Code to Sandbox
         run: sf project deploy start --source-dir force-app --target-org my-dev-org
 
-      # 6. Run ONLY our specific Apex Unit Test to ensure code is working
       - name: Run Apex Tests
         run: sf apex run test --test-level RunSpecifiedTests --tests HelloWorldTest --target-org my-dev-org --result-format human --wait 10
