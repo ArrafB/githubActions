@@ -11,9 +11,40 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required to fetch all history for Delta generation
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install NPM Dependencies
+        run: npm ci
+
+      - name: Run Code Formatting Check (Linting)
+        # Fails instantly if developers forgot to format their code
+        run: npm run prettier:verify
 
       - name: Install Salesforce CLI
         run: npm install -g @salesforce/cli
+
+      - name: Install Salesforce Code Analyzer (SF Scanner)
+        run: echo y | sf plugins install @salesforce/sfdx-scanner
+
+      - name: Install SFDX Git Delta
+        run: echo y | sf plugins install sfdx-git-delta
+
+      - name: Run Salesforce Code Analyzer
+        # Scans code for vulnerabilities, bad practices, and SOQL inside loops.
+        # Will fail the PR if Severity 1 or 2 issues are found.
+        run: sf scanner run --target "force-app" --severity-threshold 2 --normalize-severity
+
+      - name: Generate Delta (Changed Files Only)
+        # Identifies only the files that changed in this Pull Request
+        run: |
+          mkdir changed-sources
+          sf sgd:source:delta --to "HEAD" --from "origin/${{ github.base_ref }}" --output changed-sources/ --generate-delta
 
       - name: Authenticate to Salesforce Org
         run: |
@@ -21,7 +52,23 @@ jobs:
           sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --set-default --alias my-dev-org
           rm sfdx_auth.txt
 
-      # The key difference: --dry-run
-      # This simulates a deployment and runs tests, but DOES NOT save the code in Salesforce
-      - name: Validate Deployment and Run Tests (Dry Run)
-        run: sf project deploy start --source-dir force-app --target-org my-dev-org --test-level RunSpecifiedTests --tests HelloWorldTest --dry-run
+      - name: Validate Deployment, Run Tests, and Check Coverage (Dry Run)
+        run: |
+          # If the delta is empty (no deployable changes), gracefully skip
+          if [ ! -f "changed-sources/package/package.xml" ] || ! grep -q '<types>' "changed-sources/package/package.xml"; then
+            echo "No Salesforce metadata changed. Skipping deployment."
+            exit 0
+          fi
+          
+          # We use RunSpecifiedTests with HelloWorldTest for this POC to avoid failing on pre-existing org errors.
+          # In a pristine org, you would use --test-level RunLocalTests.
+          # We also output code coverage results!
+          sf project deploy start \
+            --manifest changed-sources/package/package.xml \
+            --target-org my-dev-org \
+            --test-level RunSpecifiedTests \
+            --tests HelloWorldTest \
+            --dry-run \
+            --coverage-formatters lcov,text-summary \
+            --results-dir test-results \
+            --wait 10

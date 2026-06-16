@@ -11,9 +11,20 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Required for delta generation
 
       - name: Install Salesforce CLI
         run: npm install -g @salesforce/cli
+
+      - name: Install SFDX Git Delta
+        run: echo y | sf plugins install sfdx-git-delta
+
+      - name: Generate Delta (Changed Files Only)
+        # Compare the merged commit with the previous commit to find what was just approved
+        run: |
+          mkdir changed-sources
+          sf sgd:source:delta --to "HEAD" --from "HEAD^" --output changed-sources/ --generate-delta
 
       - name: Authenticate to Salesforce Org
         run: |
@@ -21,11 +32,18 @@ jobs:
           sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --set-default --alias my-dev-org
           rm sfdx_auth.txt
 
-      - name: Verify Authentication
-        run: sf org display --target-org my-dev-org
+      - name: Deploy Code and Run Tests
+        run: |
+          # If the delta is empty (no deployable changes), gracefully skip
+          if [ ! -f "changed-sources/package/package.xml" ] || ! grep -q '<types>' "changed-sources/package/package.xml"; then
+            echo "No Salesforce metadata changed. Skipping deployment."
+            exit 0
+          fi
 
-      - name: Deploy Code to Sandbox
-        run: sf project deploy start --source-dir force-app --target-org my-dev-org
-
-      - name: Run Apex Tests
-        run: sf apex run test --test-level RunSpecifiedTests --tests HelloWorldTest --target-org my-dev-org --result-format human --wait 10
+          # Deploy ONLY the changed files
+          sf project deploy start \
+            --manifest changed-sources/package/package.xml \
+            --target-org my-dev-org \
+            --test-level RunSpecifiedTests \
+            --tests HelloWorldTest \
+            --wait 10
