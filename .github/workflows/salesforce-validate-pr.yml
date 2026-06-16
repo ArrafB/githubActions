@@ -20,7 +20,7 @@ jobs:
           node-version: '20'
 
       - name: Install NPM Dependencies
-        run: npm ci
+        run: npm install
 
       - name: Run Code Formatting Check (Linting)
         # Fails instantly if developers forgot to format their code
