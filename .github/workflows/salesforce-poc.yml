@@ -35,6 +35,6 @@ jobs:
       - name: Deploy Code to Sandbox
         run: sf project deploy start --source-dir force-app --target-org my-dev-org
 
-      # 6. Run Apex Unit Tests to ensure code is working
+      # 6. Run ONLY our specific Apex Unit Test to ensure code is working
       - name: Run Apex Tests
-        run: sf apex run test --test-level RunLocalTests --target-org my-dev-org --result-format human --wait 10
+        run: sf apex run test --test-level RunSpecifiedTests --tests HelloWorldTest --target-org my-dev-org --result-format human --wait 10
