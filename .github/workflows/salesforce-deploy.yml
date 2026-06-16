@@ -24,8 +24,11 @@ jobs:
       - name: Verify Authentication
         run: sf org display --target-org my-dev-org
 
-      - name: Deploy Code to Sandbox
-        run: sf project deploy start --source-dir force-app --target-org my-dev-org
-
-      - name: Run Apex Tests
-        run: sf apex run test --test-level RunSpecifiedTests --tests HelloWorldTest --target-org my-dev-org --result-format human --wait 10
+      - name: Deploy Code and Run Tests
+        run: |
+          sf project deploy start \
+            --source-dir force-app \
+            --target-org my-dev-org \
+            --test-level RunSpecifiedTests \
+            --tests HelloWorldTest \
+            --wait 10
