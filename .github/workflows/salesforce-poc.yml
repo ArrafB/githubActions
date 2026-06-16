@@ -21,12 +21,20 @@ jobs:
 
       # 3. Log into the Dev Org using the Secret we saved
       - name: Authenticate to Salesforce Org
-        # The action will fail here if the SFDX_AUTH_URL secret is not set in GitHub!
         run: |
           echo "${{ secrets.SFDX_AUTH_URL }}" > sfdx_auth.txt
           sf org login sfdx-url --sfdx-url-file sfdx_auth.txt --set-default --alias my-dev-org
           rm sfdx_auth.txt
 
-      # 4. Prove it worked! Let's just list the org details.
+      # 4. Prove it worked by listing org details
       - name: Verify Authentication
         run: sf org display --target-org my-dev-org
+
+      # 5. Deploy the Salesforce code to the Org
+      # The source-dir points to where our Apex classes live
+      - name: Deploy Code to Sandbox
+        run: sf project deploy start --source-dir force-app --target-org my-dev-org
+
+      # 6. Run Apex Unit Tests to ensure code is working
+      - name: Run Apex Tests
+        run: sf apex run test --test-level RunLocalTests --target-org my-dev-org --result-format human --wait 10
